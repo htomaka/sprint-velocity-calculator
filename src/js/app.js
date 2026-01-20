@@ -78,37 +78,48 @@
     function loadSettings() {
         try {
             const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
-            if (!saved) {
-                return;
+            let hasSettings = false;
+            
+            if (saved) {
+                const settings = JSON.parse(saved);
+                
+                // Validate and apply saved values
+                if (settings.velocity && !isNaN(parseFloat(settings.velocity))) {
+                    elements.velocityInput.value = settings.velocity;
+                    hasSettings = true;
+                }
+                if (settings.devCount && !isNaN(parseInt(settings.devCount))) {
+                    elements.devCountInput.value = settings.devCount;
+                    hasSettings = true;
+                }
+                if (settings.sprintDays && !isNaN(parseFloat(settings.sprintDays))) {
+                    elements.sprintDaysInput.value = settings.sprintDays;
+                    hasSettings = true;
+                }
+                if (settings.buildPercent && !isNaN(parseFloat(settings.buildPercent))) {
+                    elements.buildPercentInput.value = settings.buildPercent;
+                    hasSettings = true;
+                }
+                if (settings.rememberSettings) {
+                    elements.rememberSettingsCheckbox.checked = true;
+                }
+                
+                // Render dev rows first, then apply absences
+                renderDevRows();
+                
+                // Apply saved absences using a more reliable approach
+                applyAbsencesWithRetry(settings.absences);
             }
             
-            const settings = JSON.parse(saved);
-            
-            // Validate and apply saved values
-            if (settings.velocity && !isNaN(parseFloat(settings.velocity))) {
-                elements.velocityInput.value = settings.velocity;
+            // If no settings found, still render dev rows with default values
+            if (!hasSettings) {
+                renderDevRows();
             }
-            if (settings.devCount && !isNaN(parseInt(settings.devCount))) {
-                elements.devCountInput.value = settings.devCount;
-            }
-            if (settings.sprintDays && !isNaN(parseFloat(settings.sprintDays))) {
-                elements.sprintDaysInput.value = settings.sprintDays;
-            }
-            if (settings.buildPercent && !isNaN(parseFloat(settings.buildPercent))) {
-                elements.buildPercentInput.value = settings.buildPercent;
-            }
-            if (settings.rememberSettings) {
-                elements.rememberSettingsCheckbox.checked = true;
-            }
-            
-            // Render dev rows first, then apply absences
-            renderDevRows();
-            
-            // Apply saved absences using a more reliable approach
-            applyAbsencesWithRetry(settings.absences);
             
         } catch (error) {
             console.warn('Impossible de charger les réglages:', error);
+            // Still render dev rows on error
+            renderDevRows();
         }
     }
     

@@ -12,12 +12,15 @@
   ],
   "rewrites": [
     {
-      "source": "/js/(.*)",
-      "destination": "/js/$1"
-    },
+      "source": "/tools/velocity-calculator/(.*)",
+      "destination": "/$1"
+    }
+  ],
+  "redirects": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/",
+      "destination": "/tools/velocity-calculator/",
+      "permanent": true
     }
   ],
   "headers": [

@@ -1,13 +1,19 @@
+// DOM Elements
 const devCountInput = document.getElementById('devCount');
 const sprintDaysInput = document.getElementById('sprintDays');
 const devsContainer = document.getElementById('devs-container');
 const resultDiv = document.getElementById('result');
 const calcBtn = document.getElementById('calcBtn');
+const applyDefaultsBtn = document.getElementById('applyDefaults');
 
+// Generate developer absence rows
 function renderDevRows() {
     const devCount = parseInt(devCountInput.value || '0', 10);
+    
+    // Clear existing rows
     devsContainer.innerHTML = '';
     
+    // Generate new rows
     for (let i = 1; i <= devCount; i++) {
         const row = document.createElement('div');
         row.className = 'flex items-center gap-3 text-sm';
@@ -29,6 +35,22 @@ function renderDevRows() {
     }
 }
 
+// Apply default values
+function applyDefaults() {
+    const defaultVelocity = parseFloat(document.getElementById('defaultVelocity').value || '22');
+    const defaultDevCount = parseInt(document.getElementById('defaultDevCount').value || '3', 10);
+    const defaultSprintDays = parseFloat(document.getElementById('defaultSprintDays').value || '10');
+    const defaultBuildPercent = parseFloat(document.getElementById('defaultBuildPercent').value || '80');
+
+    document.getElementById('velocity').value = defaultVelocity;
+    devCountInput.value = defaultDevCount;
+    sprintDaysInput.value = defaultSprintDays;
+    document.getElementById('buildPercent').value = defaultBuildPercent;
+
+    renderDevRows();
+}
+
+// Calculate sprint capacity
 function calculateCapacity() {
     const velocity = parseFloat(document.getElementById('velocity').value || '0');
     const devCount = parseInt(devCountInput.value || '1', 10);
@@ -84,9 +106,14 @@ function calculateCapacity() {
     `;
 }
 
-// Event listeners
-devCountInput.addEventListener('change', renderDevRows);
-calcBtn.addEventListener('click', calculateCapacity);
+// Event listeners with null checks
+if (devCountInput) devCountInput.addEventListener('change', renderDevRows);
+if (calcBtn) calcBtn.addEventListener('click', calculateCapacity);
+if (applyDefaultsBtn) applyDefaultsBtn.addEventListener('click', applyDefaults);
 
-// Initialize
-renderDevRows();
+// Initialize with proper DOM ready check
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderDevRows);
+} else {
+    renderDevRows();
+}

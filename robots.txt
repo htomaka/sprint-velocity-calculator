@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://sprint-velocity-calculator.vercel.app/sitemap.xml
+Sitemap: https://connectable-web.com/tools/velocity-calculator/sitemap.xml
 
 # Block common bot paths
 Disallow: /_next/

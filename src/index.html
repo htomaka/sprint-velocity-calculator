@@ -135,9 +135,16 @@
         >
             Calculer la capacité
         </button>
-        <p class="text-xs text-slate-500">
-            Le calcul se base sur les jours ouvrés et la vélocité de référence.
-        </p>
+        <div class="flex items-center gap-2">
+            <input
+                    type="checkbox"
+                    id="rememberSettings"
+                    class="w-4 h-4 text-indigo-600 bg-white border-slate-300 rounded focus:ring-indigo-500"
+            />
+            <label for="rememberSettings" class="text-xs text-slate-600 cursor-pointer">
+                Se rappeler de mes réglages
+            </label>
+        </div>
     </div>
 
     <section

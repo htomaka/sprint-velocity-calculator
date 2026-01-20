@@ -1,6 +1,22 @@
 (() => {
     'use strict';
 
+    // Constants
+    const CONFIG = {
+        STORAGE_KEY: 'velocity-calculator-settings',
+        MAX_DEVELOPERS: 50,
+        MAX_VELOCITY: 1000,
+        MAX_SPRINT_DAYS: 30,
+        DOM_READY_DELAY: 100,
+        ERROR_HIDE_DELAY: 5000,
+        DEFAULT_VALUES: {
+            velocity: 22,
+            devCount: 3,
+            sprintDays: 10,
+            buildPercent: 80
+        }
+    };
+
     // Cache DOM elements
     const elements = {
         devCountInput: document.getElementById('devCount'),
@@ -9,16 +25,180 @@
         velocityInput: document.getElementById('velocity'),
         sprintDaysInput: document.getElementById('sprintDays'),
         buildPercentInput: document.getElementById('buildPercent'),
-        resultDiv: document.getElementById('result')
+        resultDiv: document.getElementById('result'),
+        rememberSettingsCheckbox: document.getElementById('rememberSettings')
     };
 
+    // Cache for dynamic elements
+    let cachedAbsenceInputs = null;
+    
+    function getCachedAbsenceInputs() {
+        if (!cachedAbsenceInputs) {
+            cachedAbsenceInputs = document.querySelectorAll('.dev-absence');
+        }
+        return cachedAbsenceInputs;
+    }
+    
+    function clearAbsenceInputsCache() {
+        cachedAbsenceInputs = null;
+    }
+
+    // localStorage functions
+    function saveSettings() {
+        if (!elements.rememberSettingsCheckbox.checked) {
+            return;
+        }
+        
+        const settings = {
+            velocity: elements.velocityInput.value,
+            devCount: elements.devCountInput.value,
+            sprintDays: elements.sprintDaysInput.value,
+            buildPercent: elements.buildPercentInput.value,
+            rememberSettings: true,
+            absences: []
+        };
+        
+        // Save absences for each developer
+        const absenceInputs = getCachedAbsenceInputs();
+        absenceInputs.forEach(input => {
+            const devIndex = input.getAttribute('data-dev-index');
+            settings.absences.push({
+                devIndex: devIndex,
+                value: input.value
+            });
+        });
+        
+        try {
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(settings));
+        } catch (error) {
+            console.warn('Impossible de sauvegarder les réglages:', error);
+        }
+    }
+    
+    function loadSettings() {
+        try {
+            const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
+            if (!saved) {
+                return;
+            }
+            
+            const settings = JSON.parse(saved);
+            
+            // Validate and apply saved values
+            if (settings.velocity && !isNaN(parseFloat(settings.velocity))) {
+                elements.velocityInput.value = settings.velocity;
+            }
+            if (settings.devCount && !isNaN(parseInt(settings.devCount))) {
+                elements.devCountInput.value = settings.devCount;
+            }
+            if (settings.sprintDays && !isNaN(parseFloat(settings.sprintDays))) {
+                elements.sprintDaysInput.value = settings.sprintDays;
+            }
+            if (settings.buildPercent && !isNaN(parseFloat(settings.buildPercent))) {
+                elements.buildPercentInput.value = settings.buildPercent;
+            }
+            if (settings.rememberSettings) {
+                elements.rememberSettingsCheckbox.checked = true;
+            }
+            
+            // Render dev rows first, then apply absences
+            renderDevRows();
+            
+            // Apply saved absences using a more reliable approach
+            applyAbsencesWithRetry(settings.absences);
+            
+        } catch (error) {
+            console.warn('Impossible de charger les réglages:', error);
+        }
+    }
+    
+    function applyAbsencesWithRetry(absences) {
+        if (!absences || !Array.isArray(absences)) {
+            return;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 5;
+        
+        function tryApplyAbsences() {
+            attempts++;
+            
+            let allApplied = true;
+            absences.forEach(absence => {
+                const input = document.querySelector(`[data-dev-index="${absence.devIndex}"]`);
+                if (input) {
+                    input.value = absence.value || '0';
+                } else {
+                    allApplied = false;
+                }
+            });
+            
+            if (!allApplied && attempts < maxAttempts) {
+                setTimeout(tryApplyAbsences, CONFIG.DOM_READY_DELAY);
+            }
+        }
+        
+        tryApplyAbsences();
+    }
+    
+    function clearSettings() {
+        try {
+            localStorage.removeItem(CONFIG.STORAGE_KEY);
+        } catch (error) {
+            console.warn('Impossible d\'effacer les réglages:', error);
+        }
+    }
+
     // Validation helpers
-    function validateInput(value, min, max, name) {
+    function validateInput(value, min, max, name, required = true) {
+        // Check if required and empty
+        if (required && (value === '' || value === null || value === undefined)) {
+            showError(`${name} est requis`);
+            return false;
+        }
+        
+        // Skip validation if not required and empty
+        if (!required && (value === '' || value === null || value === undefined)) {
+            return true;
+        }
+        
+        // Check if value is a valid number
         const num = parseFloat(value);
-        if (isNaN(num) || num < min || num > max) {
+        if (isNaN(num)) {
+            showError(`${name} doit être un nombre valide`);
+            return false;
+        }
+        
+        // Check range
+        if (num < min || num > max) {
             showError(`${name} doit être entre ${min} et ${max}`);
             return false;
         }
+        
+        return true;
+    }
+
+    function validateAbsences(absenceInputs, sprintDays) {
+        const errors = [];
+        
+        absenceInputs.forEach((input, index) => {
+            const value = input.value;
+            const daysAbsent = parseFloat(value) || 0;
+            
+            if (value !== '' && isNaN(daysAbsent)) {
+                errors.push(`L'absence du développeur ${index + 1} doit être un nombre valide`);
+            } else if (daysAbsent < 0) {
+                errors.push(`L'absence du développeur ${index + 1} ne peut pas être négative`);
+            } else if (daysAbsent > sprintDays) {
+                errors.push(`L'absence du développeur ${index + 1} ne peut pas dépasser ${sprintDays} jours`);
+            }
+        });
+        
+        if (errors.length > 0) {
+            showError(errors[0]); // Show first error
+            return false;
+        }
+        
         return true;
     }
 
@@ -34,10 +214,10 @@
         errorDiv.textContent = message;
         errorDiv.classList.remove('hidden');
         
-        // Auto-hide after 5 seconds
+        // Auto-hide after delay
         setTimeout(() => {
             errorDiv.classList.add('hidden');
-        }, 5000);
+        }, CONFIG.ERROR_HIDE_DELAY);
     }
 
     function hideError() {
@@ -84,17 +264,28 @@
         try {
             const devCount = parseInt(elements.devCountInput.value, 10);
             
-            if (isNaN(devCount) || devCount < 1 || devCount > 50) {
-                showError('Le nombre de développeurs doit être entre 1 et 50');
+            if (!validateInput(elements.devCountInput.value, 1, CONFIG.MAX_DEVELOPERS, 'Le nombre de développeurs')) {
                 return;
             }
 
-            // Clear existing rows
+            // Clear existing rows and cache
             elements.devsContainer.innerHTML = '';
+            clearAbsenceInputsCache();
             
             // Generate new rows
             for (let i = 1; i <= devCount; i++) {
-                elements.devsContainer.appendChild(createDevRow(i));
+                const row = createDevRow(i);
+                elements.devsContainer.appendChild(row);
+                
+                // Add save event listener to absence inputs
+                const absenceInput = row.querySelector('.dev-absence');
+                if (absenceInput) {
+                    absenceInput.addEventListener('input', () => {
+                        if (elements.rememberSettingsCheckbox.checked) {
+                            saveSettings();
+                        }
+                    });
+                }
             }
             
             hideError();
@@ -107,33 +298,35 @@
     function calculateCapacity() {
         try {
             // Validate inputs
-            const velocity = parseFloat(elements.velocityInput.value);
-            const devCount = parseInt(elements.devCountInput.value, 10);
-            const sprintDays = parseFloat(elements.sprintDaysInput.value);
-            const buildPercent = parseFloat(elements.buildPercentInput.value);
+            const velocity = elements.velocityInput.value;
+            const devCount = elements.devCountInput.value;
+            const sprintDays = elements.sprintDaysInput.value;
+            const buildPercent = elements.buildPercentInput.value;
 
-            if (!validateInput(velocity, 0, 1000, 'La vélocité')) return;
-            if (!validateInput(devCount, 1, 50, 'Le nombre de développeurs')) return;
-            if (!validateInput(sprintDays, 1, 30, 'Les jours ouvrés')) return;
+            if (!validateInput(velocity, 0, CONFIG.MAX_VELOCITY, 'La vélocité')) return;
+            if (!validateInput(devCount, 1, CONFIG.MAX_DEVELOPERS, 'Le nombre de développeurs')) return;
+            if (!validateInput(sprintDays, 1, CONFIG.MAX_SPRINT_DAYS, 'Les jours ouvrés')) return;
             if (!validateInput(buildPercent, 0, 100, 'Le pourcentage build')) return;
 
+            // Validate absences
+            const absenceInputs = getCachedAbsenceInputs();
+            if (!validateAbsences(absenceInputs, parseFloat(sprintDays))) {
+                return;
+            }
+
             // Calculate absences
-            const absenceInputs = document.querySelectorAll('.dev-absence');
             let totalAbsenceDevEquiv = 0;
 
             absenceInputs.forEach(input => {
                 const daysAbsent = parseFloat(input.value) || 0;
-                if (daysAbsent < 0 || daysAbsent > sprintDays) {
-                    throw new Error(`Les absences doivent être entre 0 et ${sprintDays} jours`);
-                }
-                const devEquiv = daysAbsent / sprintDays;
+                const devEquiv = daysAbsent / parseFloat(sprintDays);
                 totalAbsenceDevEquiv += devEquiv;
             });
 
             // Calculate capacity
-            const lossRatio = totalAbsenceDevEquiv / devCount;
-            const adjustedCapacity = velocity * (1 - lossRatio);
-            const buildCapacity = adjustedCapacity * (buildPercent / 100);
+            const lossRatio = totalAbsenceDevEquiv / parseFloat(devCount);
+            const adjustedCapacity = parseFloat(velocity) * (1 - lossRatio);
+            const buildCapacity = adjustedCapacity * (parseFloat(buildPercent) / 100);
             const techCapacity = adjustedCapacity - buildCapacity;
 
             // Display results safely
@@ -141,16 +334,16 @@
                 adjustedCapacity,
                 buildCapacity,
                 techCapacity,
-                buildPercent,
-                devCount,
-                sprintDays,
+                buildPercent: parseFloat(buildPercent),
+                devCount: parseFloat(devCount),
+                sprintDays: parseFloat(sprintDays),
                 totalAbsenceDevEquiv,
                 lossRatio
             });
             
             hideError();
         } catch (error) {
-            showError(error.message);
+            showError('Une erreur est survenue lors du calcul');
             console.error('calculateCapacity error:', error);
         }
     }
@@ -211,11 +404,38 @@
     // Initialize event listeners
     function init() {
         if (elements.devCountInput) {
-            elements.devCountInput.addEventListener('change', renderDevRows);
+            elements.devCountInput.addEventListener('change', () => {
+                renderDevRows();
+                if (elements.rememberSettingsCheckbox.checked) {
+                    saveSettings();
+                }
+            });
         }
         
         if (elements.calcBtn) {
             elements.calcBtn.addEventListener('click', calculateCapacity);
+        }
+        
+        // Add save event listeners for main inputs
+        [elements.velocityInput, elements.sprintDaysInput, elements.buildPercentInput].forEach(input => {
+            if (input) {
+                input.addEventListener('input', () => {
+                    if (elements.rememberSettingsCheckbox.checked) {
+                        saveSettings();
+                    }
+                });
+            }
+        });
+        
+        // Add event listener for remember settings checkbox
+        if (elements.rememberSettingsCheckbox) {
+            elements.rememberSettingsCheckbox.addEventListener('change', () => {
+                if (elements.rememberSettingsCheckbox.checked) {
+                    saveSettings();
+                } else {
+                    clearSettings();
+                }
+            });
         }
         
         // Add keyboard support
@@ -225,8 +445,8 @@
             }
         });
         
-        // Initial render
-        renderDevRows();
+        // Load settings first, then render dev rows
+        loadSettings();
     }
 
     // Start when DOM is ready

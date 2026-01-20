@@ -13,15 +13,7 @@
   "rewrites": [
     {
       "source": "/tools/velocity-calculator/(.*)",
-      "destination": "/src/$1"
-    },
-    {
-      "source": "/tools/velocity-calculator/",
-      "destination": "/src/index.html"
-    },
-    {
-      "source": "/tools/velocity-calculator/assets/(.*)",
-      "destination": "/assets/$1"
+      "destination": "/$1"
     }
   ],
   "redirects": [
@@ -50,24 +42,6 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
-        }
-      ]
-    },
-    {
-      "source": "/assets/(.*\\.css)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/css"
-        }
-      ]
-    },
-    {
-      "source": "/assets/(.*\\.js)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
         }
       ]
     }

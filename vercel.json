@@ -18,6 +18,10 @@
     {
       "source": "/tools/velocity-calculator/",
       "destination": "/src/index.html"
+    },
+    {
+      "source": "/tools/velocity-calculator/assets/(.*)",
+      "destination": "/assets/$1"
     }
   ],
   "redirects": [

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de Capacité de Sprint | Sprint Velocity Calculator</title>
+    <meta name="description" content="Calculateur de capacité de sprint agile basé sur la vélocité de référence, les jours ouvrés et les absences. Optimisez la planification de vos sprints Scrum.">
+    <meta name="keywords" content="agile, scrum, sprint, vélocité, capacité, calculateur, planification, développement, équipe">
+    <meta name="author" content="htomaka">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sprint-velocity-calculator.vercel.app/">
+    <meta property="og:title" content="Calculateur de Capacité de Sprint | Sprint Velocity Calculator">
+    <meta property="og:description" content="Calculateur de capacité de sprint agile basé sur la vélocité de référence, les jours ouvrés et les absences. Optimisez la planification de vos sprints Scrum.">
+    <meta property="og:image" content="https://sprint-velocity-calculator.vercel.app/og-image.png">
+    <meta property="og:site_name" content="Sprint Velocity Calculator">
+    <meta property="og:locale" content="fr_FR">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://sprint-velocity-calculator.vercel.app/">
+    <meta property="twitter:title" content="Calculateur de Capacité de Sprint | Sprint Velocity Calculator">
+    <meta property="twitter:description" content="Calculateur de capacité de sprint agile basé sur la vélocité de référence, les jours ouvrés et les absences. Optimisez la planification de vos sprints Scrum.">
+    <meta property="twitter:image" content="https://sprint-velocity-calculator.vercel.app/og-image.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://sprint-velocity-calculator.vercel.app/">
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="/js/app.js"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <header class="mb-6">
+        <h1 class="text-2xl font-semibold text-slate-900">
+            Calculateur de capacité de sprint
+        </h1>
+        <p class="mt-1 text-sm text-slate-600">
+            Basé sur la vélocité de référence, les jours ouvrés du sprint et les absences par développeur.
+        </p>
+    </header>
+
+    <section class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Vélocité de référence du sprint (équipe complète)
+                </label>
+                <input
+                        type="number"
+                        id="velocity"
+                        value="22"
+                        step="0.1"
+                        class="w-full rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Nombre de développeurs dans l'équipe
+                </label>
+                <input
+                        type="number"
+                        id="devCount"
+                        value="3"
+                        min="1"
+                        class="w-full rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Jours ouvrés du sprint
+                    <span class="text-xs text-slate-500">(ex: 10 pour un sprint de 2 semaines)</span>
+                </label>
+                <input
+                        type="number"
+                        id="sprintDays"
+                        value="10"
+                        min="1"
+                        class="w-full rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Pourcentage dédié au build
+                </label>
+                <div class="flex items-center gap-2">
+                    <input
+                            type="number"
+                            id="buildPercent"
+                            value="80"
+                            min="0"
+                            max="100"
+                            class="w-24 rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    />
+                    <span class="text-sm text-slate-600">%</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 mb-6">
+        <h2 class="text-sm font-semibold text-slate-800 mb-3">
+            Absences par développeur
+        </h2>
+        <p class="text-xs text-slate-500 mb-4">
+            Indique les absences en jours ouvrés pour ce sprint.
+        </p>
+        <div id="devs-container" class="space-y-2"></div>
+    </section>
+
+    <div class="flex items-center gap-3 mb-6">
+        <button
+                id="calcBtn"
+                class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+        >
+            Calculer la capacité
+        </button>
+        <p class="text-xs text-slate-500">
+            Le calcul se base sur les jours ouvrés et la vélocité de référence.
+        </p>
+    </div>
+
+    <section
+            id="result"
+            class="hidden bg-white shadow-sm rounded-xl border border-slate-200 p-6"
+    ></section>
+</div>
+
+</body>
+</html>
